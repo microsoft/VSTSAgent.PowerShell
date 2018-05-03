@@ -4,7 +4,7 @@ Tools for managing and automating your Visual Studio Team Services Agents.
 
 ## Builds
 
-The `master` branch is manually built and deployed to the [PowerShell Gallery]().
+The `master` branch is manually built and deployed to the [PowerShell Gallery](https://www.powershellgallery.com/packages/VSTSAgent).
 
 ## Installation
 
