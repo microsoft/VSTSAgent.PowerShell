@@ -26,7 +26,10 @@ Configuration Sample_xVSTSAgent {
 
         [ValidateSet('Present', 'Absent')]
         [System.String]
-        $Ensure = 'Present'
+        $Ensure = 'Present',
+
+        [System.Boolean]
+        $PrefixComputerName = $false
     )
 
     Import-DscResource -ModuleName VSTSAgent
@@ -34,13 +37,14 @@ Configuration Sample_xVSTSAgent {
     Node 'localhost' {
 
         xVSTSAgent VSTSAgent {
-            Name              = $Name
-            Pool              = $Pool
-            Account           = $Account
-            AccountCredential = $AccountCredential
-            LogonCredential   = $LogonCredential
-            AgentDirectory    = $AgentDirectory
-            Ensure            = $Ensure
+            Name               = $Name
+            Pool               = $Pool
+            Account            = $Account
+            AccountCredential  = $AccountCredential
+            LogonCredential    = $LogonCredential
+            AgentDirectory     = $AgentDirectory
+            Ensure             = $Ensure
+            PrefixComputerName = $PrefixComputerName
         }
     }
 }

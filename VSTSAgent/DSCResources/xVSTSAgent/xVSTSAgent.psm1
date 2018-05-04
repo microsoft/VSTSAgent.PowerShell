@@ -1,3 +1,12 @@
+function Get-PrefixComputerName {
+    param(
+        [parameter(Mandatory = $true)]
+        [string]$Name
+    )
+
+    "$($env:COMPUTERNAME)-$Name"
+}
+
 <#
 .SYNOPSIS
     Returns the status of vsts agent installs.
@@ -40,8 +49,13 @@ function Get-TargetResource {
 
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present'
+        $Ensure = 'Present',
+
+        [System.Boolean]
+        $PrefixComputerName = $false
     )
+
+    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
     $returnValue = @{ Name = $Name }
     $agent = Get-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory
@@ -102,10 +116,15 @@ function Set-TargetResource {
 
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present'
+        $Ensure = 'Present',
+
+        [System.Boolean]
+        $PrefixComputerName = $false
     )
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
+
+    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
     if ( $Ensure -eq 'Present') {
         $installArgs = @{
@@ -170,8 +189,13 @@ function Test-TargetResource {
 
         [ValidateSet("Present", "Absent")]
         [System.String]
-        $Ensure = 'Present'
+        $Ensure = 'Present',
+
+        [System.Boolean]
+        $PrefixComputerName = $false
     )
+
+    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
     $agent = Get-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory
     switch ($Ensure) {
