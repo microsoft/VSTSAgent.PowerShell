@@ -4,7 +4,15 @@ Tools for managing and automating your Visual Studio Team Services Agents.
 
 ## Builds
 
-The `master` branch is manually built and deployed to the [PowerShell Gallery](https://www.powershellgallery.com/packages/VSTSAgent).
+### Master
+[![Build status](https://ci.appveyor.com/api/projects/status/pnw34lbpygqyttb9/branch/master?svg=true)](https://ci.appveyor.com/project/jwittner/vstsagent-powershell/branch/master)
+
+The `master` branch is automatically built and deployed to the [PowerShell Gallery](https://www.powershellgallery.com/packages/VSTSAgent).
+
+### Develop
+[![Build status](https://ci.appveyor.com/api/projects/status/pnw34lbpygqyttb9/branch/develop?svg=true)](https://ci.appveyor.com/project/jwittner/vstsagent-powershell/branch/develop)
+
+The `develop` branch is automatically built and deployed as a prerelease module to the [PowerShell Gallery](https://www.powershellgallery.com/packages/VSTSAgent).
 
 ## Installation
 

@@ -1,0 +1,38 @@
+version: '{build}'
+skip_tags: true
+pull_requests:
+  do_not_increment_build_number: true
+environment:
+  NugetAPIKey:
+    secure: zvkaZiaBXVko+3ZzuSb7W6DTUJmHX98XgEhKs28SnGD+4TM3gzhPxVnNWSmBhXEx
+install:
+- ps: >-
+    $ErrorActionPreference = 'Stop'
+
+    Install-PackageProvider -Name NuGet -Force
+
+    Remove-Module 'PowerShellGet' -Force -ErrorAction SilentlyContinue -Verbose
+
+    Install-Module 'PowerShellGet' -Scope CurrentUser -Force -AllowClobber -Verbose
+build_script:
+- ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER" -Suffix "$env:APPVEYOR_REPO_BRANCH"
+deploy_script:
+- ps: >-
+    $publish = Start-Process 'powershell' -Wait -PassThru -RedirectStandardError .\deploy_error.log -RedirectStandardOutput .\deploy_out.log { Publish-Module -Path .\VSTSAgent -NugetAPIKey $env:NugetAPIKey -Verbose }
+    
+    Get-Content .\deploy_output.log -ErrorAction SilentlyContinue | Write-Host
+    
+    Get-Content .\deploy_error.log -ErrorAction SilentlyContinue | Write-Host -ForegroundColor Red
+
+    if( $publish.ExitCode -ne 0 ) { Write-Error "Publish step failed - see above logs"}
+for:
+-
+  branches:
+    only:
+    - master
+  build_script:
+  - ps: .\build.ps1 -Revision "$env:APPVEYOR_BUILD_NUMBER"
+-
+  branches:
+    only:
+    - develop
