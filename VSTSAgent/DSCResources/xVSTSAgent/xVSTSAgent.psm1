@@ -39,9 +39,13 @@ function Get-TargetResource {
         [System.String]
         $AgentDirectory,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $Work,
+
         [parameter(Mandatory = $true)]
         [System.String]
-        $Account,
+        $ServerUrl,
 
         [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
@@ -58,12 +62,14 @@ function Get-TargetResource {
         $PrefixComputerName = $false
     )
 
-    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
+    if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
-    $returnValue = @{ Name = $Name }
+    $returnValue = @{ 'Name' = $Name; 'AgentDirectory' = $AgentDirectory }
     $agent = Get-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory
     if ( $agent ) {
-        $returnValue['Account'] = $agent.Account
+        $returnValue['ServerUrl'] = $agent.ServerUrl
+        $returnValue['Work'] = "$($agent.Work)"
+        $returnValue['PoolId'] = "$($agent.PoolId)"
         $returnValue['Ensure'] = 'Present'
     }
     else {
@@ -106,9 +112,13 @@ function Set-TargetResource {
         [System.String]
         $AgentDirectory,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $Work,
+
         [parameter(Mandatory = $true)]
         [System.String]
-        $Account,
+        $ServerUrl,
 
         [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
@@ -127,21 +137,25 @@ function Set-TargetResource {
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
 
-    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
+    if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
     if ( $Ensure -eq 'Present') {
         $installArgs = @{
-            Name           = $Name 
-            Pool           = $Pool
-            Account        = $Account
-            PAT            = $AccountCredential.Password
-            AgentDirectory = $AgentDirectory
-            Replace        = $true
+            'Name'           = $Name 
+            'Pool'           = $Pool
+            'ServerUrl'      = $ServerUrl
+            'PAT'            = $AccountCredential.Password
+            'AgentDirectory' = $AgentDirectory
+            'Replace'        = $true
         }
 
+        if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
         
         Install-VSTSAgent @installArgs
+    }
+    else {
+        Uninstall-VSTSAgent -Name $Name -AgentDirectory $AgentDirectory -PAT $AccountCredential.Password 
     }
 }
 
@@ -179,9 +193,13 @@ function Test-TargetResource {
         [System.String]
         $AgentDirectory,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $Work,
+
         [parameter(Mandatory = $true)]
         [System.String]
-        $Account,
+        $ServerUrl,
 
         [parameter(Mandatory = $true)]
         [System.Management.Automation.PSCredential]
@@ -198,16 +216,37 @@ function Test-TargetResource {
         $PrefixComputerName = $false
     )
 
-    if( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
+    if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
 
-    $agent = Get-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory
+    $agent = Get-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory -Verbose
+
     switch ($Ensure) {
-        'Present' { 
+        'Present' {
             if ( -not $agent ) { return $false }
-            if ( $agent.Account -ne $Account ) { return $false }
+
+            Write-Verbose "Found agent pointed to $($agent.ServerUrl) and working from $($agent.Work)"
+            if ( $agent.ServerUrl -ne $ServerUrl ) {
+                Write-Verbose "ServerUrl mismatch: $($agent.ServerUrl) -ne $ServerUrl"
+                return $false 
+            }
+            if ( $Work -and $agent.Work -ne $Work ) { 
+                Write-Verbose "Work folder mismatch: $($agent.Work) -ne $Work"
+                return $false 
+            }
+            # TODO: Get back to pool name from $agent.PoolId.
+
+            Write-Verbose "VSTS Agent is Present"
             return $true
         }
-        'Absent' { return (-not $agent) }
+        'Absent' { 
+            if ( $agent ) { 
+                Write-Verbose "Found agent pointed to $($agent.ServerUrl) and working from $($agent.Work)"
+                return $false
+            } 
+
+            Write-Verbose "VSTS Agent is Absent"
+            return $true
+        }
     }
 }
 
