@@ -37,7 +37,7 @@ Configuration Sample_xVSTSAgent {
         $PrefixComputerName = $false
     )
 
-    Import-DscResource -ModuleName VSTSAgent -ModuleVersion '2.0'
+    Import-DscResource -ModuleName VSTSAgent
 
     Node 'localhost' {
 
