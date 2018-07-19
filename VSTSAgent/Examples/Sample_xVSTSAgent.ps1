@@ -8,7 +8,7 @@ Configuration Sample_xVSTSAgent {
     (   
         [parameter(Mandatory = $true)] 
         [System.String]
-        $Account,
+        $ServerUrl,
 
         [System.String]
         $Name = "$env:COMPUTERNAME",
@@ -26,6 +26,9 @@ Configuration Sample_xVSTSAgent {
         [System.String]
         $AgentDirectory = 'C:\VSTSAgents',
 
+        [System.String]
+        $Work,
+
         [ValidateSet('Present', 'Absent')]
         [System.String]
         $Ensure = 'Present',
@@ -34,17 +37,18 @@ Configuration Sample_xVSTSAgent {
         $PrefixComputerName = $false
     )
 
-    Import-DscResource -ModuleName VSTSAgent
+    Import-DscResource -ModuleName VSTSAgent -ModuleVersion '2.0'
 
     Node 'localhost' {
 
         xVSTSAgent VSTSAgent {
             Name               = $Name
             Pool               = $Pool
-            Account            = $Account
+            ServerUrl          = $ServerUrl
             AccountCredential  = $AccountCredential
             LogonCredential    = $LogonCredential
             AgentDirectory     = $AgentDirectory
+            Work               = $Work
             Ensure             = $Ensure
             PrefixComputerName = $PrefixComputerName
         }

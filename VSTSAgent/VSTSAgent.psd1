@@ -11,28 +11,28 @@
 @{
 
     # Script module or binary module file associated with this manifest.
-    RootModule        = 'VSTSAgent.psm1'
+    RootModule           = 'VSTSAgent.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '1.1'
+    ModuleVersion        = '2.0'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
 
     # ID used to uniquely identify this module
-    GUID              = '679b6302-ff19-4e53-a20f-eac2f531b5b6'
+    GUID                 = '679b6302-ff19-4e53-a20f-eac2f531b5b6'
 
     # Author of this module
-    Author            = 'Microsoft'
+    Author               = 'Microsoft'
 
     # Company or vendor of this module
-    CompanyName       = 'Microsoft'
+    CompanyName          = 'Microsoft'
 
     # Copyright statement for this module
-    Copyright         = 'Copyright (c) Microsoft Corporation. All rights reserved.'
+    Copyright            = 'Copyright (c) Microsoft Corporation. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description       = 'Tools for managing and automating your VSTS Agents.'
+    Description          = 'Tools for managing and automating your VSTS Agents.'
 
     # Minimum version of the Windows PowerShell engine required by this module
     # PowerShellVersion = ''
@@ -71,7 +71,7 @@
     # NestedModules = @()
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-    FunctionsToExport = @(
+    FunctionsToExport    = @(
         'Find-VSTSAgent', 
         'Install-VSTSAgent', 
         'Get-VSTSAgent', 
@@ -81,16 +81,16 @@
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-    CmdletsToExport   = @()
+    CmdletsToExport      = @()
 
     # Variables to export from this module
-    VariablesToExport = @()
+    VariablesToExport    = @()
 
     # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-    AliasesToExport   = @()
+    AliasesToExport      = @()
 
     # DSC resources to export from this module
-    # DscResourcesToExport = @()
+    DscResourcesToExport = @('xVSTSAgent')
 
     # List of all modules packaged with this module
     # ModuleList = @()
@@ -99,7 +99,7 @@
     # FileList = @()
 
     # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
-    PrivateData       = @{
+    PrivateData          = @{
 
         PSData = @{
 
@@ -123,7 +123,7 @@
     } # End of PrivateData hashtable
 
     # HelpInfo URI of this module
-    HelpInfoURI       = 'https://github.com/Microsoft/VSTSAgent.PowerShell/blob/master/README.md'
+    HelpInfoURI          = 'https://github.com/Microsoft/VSTSAgent.PowerShell/blob/master/README.md'
 
     # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
     # DefaultCommandPrefix = ''
