@@ -29,17 +29,16 @@ Get all of your installed VSTS Agents:
 Get-VSTSAgent | Format-Table -AutoSize
 
 # Sample Output
-# Name    Version Account   Status  Uri
-# ----    ------- -------   ------  ---
-# Agent01 2.133.3 MyAccount Running file:///C:/Users/me/VSTSAgents/Agent01/
-# Agent02 2.133.3 MyAccount Running file:///C:/Users/me/VSTSAgents/Agent01/
+# Id Name    PoolId ServerUrl                          Work                             Service                    Version Path
+# -- ----    ------ ---------                          ----                             -------                    ------- ----
+# 54 Agent01      1 https://account.visualstudio.com/  file:///D:/VSTSAgentWork/Agent01 vstsagent.account.Agent01  2.138.0 file:///C:/VSTSAgents/Agent01
 ```
 
 Install the latest VSTS Agent:
 
 ```powershell
 $pat = Read-Host -AsSecureString
-Install-VSTSAgent -Account 'MyAccount' -PAT $pat -Name 'Agent01'
+Install-VSTSAgent -ServerUrl 'https://account.visualstudio.com' -PAT $pat -Name 'Agent01'
 ```
 
 Uninstall any VSTS Agents:
@@ -76,9 +75,10 @@ Configuration Sample_xVSTSAgent_Install {
 
         xVSTSAgent VSTSAgent {
             Name              = 'Agent01'
-            Account           = 'MyAccount'
+            ServerUrl         = 'https://account.visualstudio.com'
             AccountCredential = $AccountCredential
             AgentDirectory    = 'C:\VSTSAgents'
+            Work              = 'D:\VSTSAgentsWork\Agent01'
             Ensure            = 'Present'
         }
     }
