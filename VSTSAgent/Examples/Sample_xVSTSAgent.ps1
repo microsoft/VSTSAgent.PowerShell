@@ -33,8 +33,8 @@ Configuration Sample_xVSTSAgent {
         [System.String]
         $Ensure = 'Present',
 
-        [System.Boolean]
-        $PrefixComputerName = $false
+        [Switch]
+        $PrefixComputerName
     )
 
     Import-DscResource -ModuleName VSTSAgent
