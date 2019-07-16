@@ -5,9 +5,10 @@ class xVSTSAgent : OMI_BaseResource
     [Key] String Name;
     [Write] String Pool;
     [Required, EmbeddedInstance("MSFT_Credential")] String AccountCredential;
-    [Required] String Account;
+    [Required] String ServerUrl;
     [Write, EmbeddedInstance("MSFT_Credential")] String LogonCredential;
     [Required] String AgentDirectory;
+    [Write] String Work;
     [Write] Boolean PrefixComputerName;
     [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };

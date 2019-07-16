@@ -176,14 +176,18 @@ function Find-VSTSAgent {
     The required agent version.
 .PARAMETER AgentDirectory
     What directory should agents be installed into?
+.PARAMETER Work
+    Work directory where job data is stored. Defaults to _work under the
+    root of the agent directory. The work directory is owned by a given
+    agent and should not share between multiple agents.
 .PARAMETER Name
     What name should the agent use?
 .PARAMETER Pool
     What pool should the agent be registered into?
 .PARAMETER PAT
     What personal access token (PAT) should be used to auth with VSTS?
-.PARAMETER Account
-    What account should the agent be registered to? As in "https://$Account.visualstudio.com".
+.PARAMETER ServerUrl
+    What server url should the agent be registered to? Eg. 'https://account.visualstudio.com'
 .PARAMETER Replace
     Should the new agent replace any existing one on the account?
 .PARAMETER LogonCredential
@@ -210,6 +214,9 @@ function Install-VSTSAgent {
         [string]$AgentDirectory = [IO.Path]::Combine($env:USERPROFILE, "VSTSAgents"),
 
         [parameter(Mandatory = $false)]
+        [string]$Work,
+
+        [parameter(Mandatory = $false)]
         [string]$Name = [System.Environment]::MachineName + "-$(Get-Random)",
 
         [parameter(Mandatory = $false)]
@@ -219,7 +226,7 @@ function Install-VSTSAgent {
         [securestring]$PAT,
 
         [parameter(Mandatory = $true)]
-        [string]$Account,
+        [uri]$ServerUrl,
 
         [parameter(Mandatory = $false)]
         [switch]$Replace,
@@ -239,7 +246,7 @@ function Install-VSTSAgent {
 
     $existing = Get-VSTSAgent -AgentDirectory $AgentDirectory -NameFilter $Name
     if ( $existing ) { 
-        if($Replace) { 
+        if ($Replace) { 
             Uninstall-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory -PAT $PAT -ErrorAction Stop
         }
         else { throw "Agent $Name already exists in $AgentDirectory" }
@@ -284,10 +291,11 @@ function Install-VSTSAgent {
     $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
     if ( -not $configPath ) { throw "Agent $agentFolder is missing config.cmd" }
 
-    [string[]]$configArgs = @('--unattended', '--url', "https://$Account.visualstudio.com", '--auth', `
+    [string[]]$configArgs = @('--unattended', '--url', "$ServerUrl", '--auth', `
             'pat', '--pool', "$Pool", '--agent', "$Name", '--runAsService')
     if ( $Replace ) { $configArgs += '--replace' }
     if ( $LogonCredential ) { $configArgs += '--windowsLogonAccount', $LogonCredential.UserName }
+    if ( $Work ) { $configArgs += '--work', $Work }
 
     if ( -not $PSCmdlet.ShouldProcess("$configPath $configArgs", "Start-Process") ) { return }
 
@@ -302,7 +310,7 @@ function Install-VSTSAgent {
     $outFile = [io.path]::Combine($agentFolder, "out.log")
     $errorFile = [io.path]::Combine($agentFolder, "error.log")
 
-    Write-Verbose "Registering $Name to $Pool in $Account"
+    Write-Verbose "Registering $Name to $Pool at $ServerUrl"
     Start-Process $configPath -ArgumentList $configArgs -NoNewWindow -Wait `
         -RedirectStandardOutput $outFile -RedirectStandardError $errorFile -ErrorAction Stop
 
@@ -361,13 +369,13 @@ function Uninstall-VSTSAgent {
     $token = [System.Net.NetworkCredential]::new($null, $PAT).Password
 
     Get-VSTSAgent @getArgs | ForEach-Object {
-        if ( -not $PSCmdlet.ShouldProcess("$($_.Name) - $($_.Uri)", "Uninstall")) { return }
+        if ( -not $PSCmdlet.ShouldProcess("$($_.Name) - $($_.Path)", "Uninstall")) { return }
 
-        $configPath = [io.path]::Combine($_.Uri.LocalPath, 'config.cmd')
+        $configPath = [io.path]::Combine($_.Path.LocalPath, 'config.cmd')
         $configArgs = @('remove', '--unattended', '--auth', 'pat', '--token', "$token")
 
-        $outFile = [io.path]::Combine($_.Uri.LocalPath, "out.log")
-        $errorFile = [io.path]::Combine($_.Uri.LocalPath, "error.log")
+        $outFile = [io.path]::Combine($_.Path.LocalPath, "out.log")
+        $errorFile = [io.path]::Combine($_.Path.LocalPath, "error.log")
 
         Start-Process $configPath -ArgumentList $configArgs -NoNewWindow -Wait `
             -RedirectStandardOutput $outFile -RedirectStandardError $errorFile
@@ -377,7 +385,10 @@ function Uninstall-VSTSAgent {
             return; # Don't remove the agent folder if something went wrong.
         }
 
-        Remove-Item $_.Uri.LocalPath -Recurse -Force
+        Remove-Item $_.Path.LocalPath -Recurse -Force -ErrorAction Continue
+        if ( $_.Work.IsAbsoluteUri ) {
+            Remove-Item $_.Work.LocalPath -Recurse -Force -ErrorAction Continue
+        }
     }
 }
 
@@ -416,77 +427,63 @@ function Get-VSTSAgent {
         [string]$NameFilter = '*'
     )
 
-    Get-ChildItem $AgentDirectory -Directory -Filter $NameFilter -ErrorAction SilentlyContinue | ForEach-Object {
+    Get-ChildItem "$AgentDirectory\**\.agent" -Attributes '!D+H,!D' -ErrorAction SilentlyContinue  | 
+        ForEach-Object {
         Write-Verbose "Found agent at $($_.FullName)"
 
-        $configPath = [io.path]::combine($_.FullName, 'config.cmd')
-        $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
-        if ( -not $configPath ) {
-            Write-Warning "Agent $_ is missing config.cmd"
-            return
-        }
+        $agentFullDirectory = $_.Directory.FullName
+        $agentFullPath = $_.FullName
 
-        $version = & $configPath --version
+        try {
+            $agent = Get-Content $agentFullPath  | ConvertFrom-Json
+            Write-Verbose "Agent is named $($agent.agentName)"
+            if ( $NameFilter -and ($agent.agentName -notlike $NameFilter) ) { 
+                Write-Verbose "Skipping agent because $($agent.agentName) is not like $NameFilter"
+                return 
+            }
 
-        if ( $RequiredVersion -and $version -ne $RequiredVersion) { return }
-        if ( $MinimumVersion -and $version -lt $MinimumVersion) { return }
-        if ( $MaximumVersion -and $version -gt $MaximumVersion) { return }
+            $configPath = [io.path]::combine($agentFullDirectory, 'config.cmd')
+            $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
+            if ( -not $configPath ) {
+                Write-Warning "Agent $agentFullDirectory is missing config.cmd"
+                return
+            }
 
-        $name = $_.Name
-        $service = Get-Service | ForEach-Object {
-            if ( $_.Name -match "^vstsagent\.(.+)\.$name$" ) {
-                [pscustomobject]@{ 'Account' = $Matches[1]; 'Status' = $_.Status }
+            $version = & $configPath --version
+
+            if ( $RequiredVersion -and $version -ne $RequiredVersion) { 
+                Write-Verbose "Skipping agent because $version not match $RequiredVersion"
+                return
+            }
+            if ( $MinimumVersion -and $version -lt $MinimumVersion) { 
+                Write-Verbose "Skipping agent because $version is less than $MinimumVersion"
+                return 
+            }
+            if ( $MaximumVersion -and $version -gt $MaximumVersion) {
+                Write-Verbose "Skipping agent because $version is greater than $MaximumVersion"
+                return
+            }
+        
+            if ( Test-Path "$($_.Directory.FullName)\.service" ) {
+                $serviceName = Get-Content "$($_.Directory.FullName)\.service"
+                $service = Get-Service $serviceName
+            }
+
+            [pscustomobject]@{
+                'Id'        = $agent.agentId
+                'Name'      = $agent.agentName
+                'PoolId'    = $agent.poolId
+                'ServerUrl' = [uri]$agent.serverUrl
+                'Work'      = [uri]$agent.workFolder
+                'Service'   = $service
+                'Version'   = $version
+                'Path'      = [uri]$agentFullDirectory
             }
         }
-
-        [pscustomobject]@{
-            'Name'    = $name
-            'Version' = $version
-            'Account' = $service.Account
-            'Status'  = $service.Status
-            'Uri'     = [uri]::new( $configPath.Directory.FullName + [io.path]::DirectorySeparatorChar )
-        }
+        catch { Write-Error "Exception processing agent at $agentFullPath\: $_" }
     }
 }
 
-<#
-.SYNOPSIS
-    Get service for installed agent.
-.DESCRIPTION
-    Get service for installed agent using VSTS agent naming scheme.
-.PARAMETER Name
-    Name of the agent to find the service for.
-.PARAMETER Account
-    Account of the agent to find the service for.
-.PARAMETER Status
-    Filter services to only those whose status matches this.
-#>
-function Get-VSTSAgentService {
-    param(
-        [parameter(ValueFromPipelineByPropertyName, Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$Name,
-
-        [parameter(ValueFromPipelineByPropertyName, Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [string]$Account,
-
-        [System.ServiceProcess.ServiceControllerStatus]$Status
-    )
-
-    $serviceName = "vstsagent.$Account.$Name"
-    $services = Get-Service -Name $serviceName -ErrorAction 'SilentlyContinue'
-
-    if ( $services.Count -eq 0 ) {
-        Write-Error "Agent $($_.Name) has no matching service at $serviceName"
-    }
-
-    if ( $Status ) {
-        $services = $services | Where-Object { $_.Status -eq $Status }
-    }
-
-    $services
-}
 
 <#
 .SYNOPSIS
@@ -523,9 +520,13 @@ function Start-VSTSAgent {
         [string]$NameFilter
     )
 
-    Get-VSTSAgent @PSBoundParameters | Get-VSTSAgentService -Status Stopped | ForEach-Object {
-        if ( $PSCmdlet.ShouldProcess($_.Name, "Start-Service") ) {
-            Start-Service $_
+    $stoppedAgents = Get-VSTSAgent @PSBoundParameters | Where-Object { 
+        $_.Service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped 
+    }
+
+    $stoppedAgents | ForEach-Object {
+        if ( $PSCmdlet.ShouldProcess($_.Service.Name, "Start-Service") ) {
+            Start-Service $_.Service
         }
     }
 }
@@ -565,9 +566,13 @@ function Stop-VSTSAgent {
         [string]$NameFilter
     )
     
-    Get-VSTSAgent @PSBoundParameters | Get-VSTSAgentService -Status Running | ForEach-Object {
-        if ( $PSCmdlet.ShouldProcess($_.Name, "Stop-Service") ) {
-            Stop-Service $_
+    $runningAgents = Get-VSTSAgent @PSBoundParameters | Where-Object { 
+        $_.Service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running 
+    }
+
+    $runningAgents | ForEach-Object {
+        if ( $PSCmdlet.ShouldProcess($_.Service.Name, "Stop-Service") ) {
+            Stop-Service $_.Service
         }
     }
 }
