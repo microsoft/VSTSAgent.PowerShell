@@ -23,6 +23,8 @@ function Get-PrefixComputerName {
     Unused - not necessary for discovery.
 .PARAMETER LogonCredential
     Unused - not necessary for discovery.
+.PARAMETER IntegratedAuth
+    Unused - not necessary for discovery.
 .PARAMETER Ensure
     Unused - not necessary for discovery.
 #>
@@ -59,7 +61,10 @@ function Get-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [Switch]
+        $IntegratedAuth = $false
     )
 
     if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
@@ -94,6 +99,8 @@ function Get-TargetResource {
     The credential used to auth with VSTS.
 .PARAMETER LogonCredential
     What credential should the agent service use?
+.PARAMETER IntegratedAuth
+    Should we use integrated auth instead of PAT?
 .PARAMETER Ensure
     Should we ensure the agent exists or that it doesn't?
 #>
@@ -132,7 +139,10 @@ function Set-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [Switch]
+        $IntegratedAuth = $false
     )
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
@@ -144,18 +154,26 @@ function Set-TargetResource {
             'Name'           = $Name 
             'Pool'           = $Pool
             'ServerUrl'      = $ServerUrl
-            'PAT'            = $AccountCredential.Password
             'AgentDirectory' = $AgentDirectory
             'Replace'        = $true
         }
 
+
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
-        
+
+        if ( $IntegratedAuth ) { $installArgs['Integrated'] = $true }
+        else { $installArgs['PAT'] = $AccountCredential.Password 
+    }
         Install-VSTSAgent @installArgs
     }
     else {
-        Uninstall-VSTSAgent -Name $Name -AgentDirectory $AgentDirectory -PAT $AccountCredential.Password 
+        if ( $IntegratedAuth ) {
+            Uninstall-VSTSAgent -Name $Name -AgentDirectory $AgentDirectory -Integrated
+        }
+        else {
+            Uninstall-VSTSAgent -Name $Name -AgentDirectory $AgentDirectory -PAT $AccountCredential.Password 
+        }
     }
 }
 
@@ -174,6 +192,8 @@ function Set-TargetResource {
     Unused - testing does not require credentials.
 .PARAMETER LogonCredential
     Unused - agent service logon user is not currently detectable.
+.PARAMETER IntegratedAuth
+    Unused - testing does not require credentials.
 .PARAMETER Ensure
     Should the agent be present or absent?
 #>
@@ -213,7 +233,10 @@ function Test-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [Switch]
+        $IntegratedAuth = $false
     )
 
     if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }

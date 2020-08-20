@@ -186,6 +186,8 @@ function Find-VSTSAgent {
     What pool should the agent be registered into?
 .PARAMETER PAT
     What personal access token (PAT) should be used to auth with VSTS?
+.PARAMETER Integrated
+    Should the agent use integrated auth with VSTS instead of a PAT?
 .PARAMETER ServerUrl
     What server url should the agent be registered to? Eg. 'https://account.visualstudio.com'
 .PARAMETER Replace
@@ -222,8 +224,11 @@ function Install-VSTSAgent {
         [parameter(Mandatory = $false)]
         [string]$Pool = 'Default',
 
-        [parameter(Mandatory = $true)]
+        [parameter(Mandatory = $true, ParameterSetName = 'PATAuth')]
         [securestring]$PAT,
+
+        [parameter(Mandatory = $true, ParameterSetName = 'IntegratedAuth')]
+        [switch]$Integrated,
 
         [parameter(Mandatory = $true)]
         [uri]$ServerUrl,
@@ -247,7 +252,12 @@ function Install-VSTSAgent {
     $existing = Get-VSTSAgent -AgentDirectory $AgentDirectory -NameFilter $Name
     if ( $existing ) { 
         if ($Replace) { 
-            Uninstall-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory -PAT $PAT -ErrorAction Stop
+            if ($Integrated) {
+                Uninstall-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory -Integrated -ErrorAction Stop
+            }
+            else {
+                Uninstall-VSTSAgent -NameFilter $Name -AgentDirectory $AgentDirectory -PAT $PAT -ErrorAction Stop
+            }
         }
         else { throw "Agent $Name already exists in $AgentDirectory" }
     }
@@ -291,16 +301,21 @@ function Install-VSTSAgent {
     $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
     if ( -not $configPath ) { throw "Agent $agentFolder is missing config.cmd" }
 
-    [string[]]$configArgs = @('--unattended', '--url', "$ServerUrl", '--auth', `
-            'pat', '--pool', "$Pool", '--agent', "$Name", '--runAsService')
+    [string[]]$configArgs = @('--unattended', '--url', """$ServerUrl""",  '--pool',`
+        """$Pool""", '--agent', """$Name""", '--runAsService')
     if ( $Replace ) { $configArgs += '--replace' }
     if ( $LogonCredential ) { $configArgs += '--windowsLogonAccount', $LogonCredential.UserName }
-    if ( $Work ) { $configArgs += '--work', $Work }
+    if ( $Work ) { $configArgs += '--work', """$Work""" }
 
     if ( -not $PSCmdlet.ShouldProcess("$configPath $configArgs", "Start-Process") ) { return }
 
-    $token = [System.Net.NetworkCredential]::new($null, $PAT).Password
-    $configArgs += '--token', $token
+    if ($Integrated) {
+        $configArgs += '--auth', 'integrated'
+    }
+    else {
+        $token = [System.Net.NetworkCredential]::new($null, $PAT).Password
+        $configArgs += '--auth', 'pat', '--token', $token 
+    }
 
     if ( $LogonCredential ) {
         $configArgs += '--windowsLogonPassword', `
@@ -336,6 +351,8 @@ function Install-VSTSAgent {
     Only agents whose names match this filter will be uninstalled.
 .PARAMETER PAT
     The personal access token used to auth with VSTS.
+.PARAMETER Integrated
+    Should the agent use integrated auth with VSTS instead of a PAT?
 #>
 function Uninstall-VSTSAgent {
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = "NoVersion")]
@@ -357,12 +374,15 @@ function Uninstall-VSTSAgent {
         [parameter(Mandatory = $false)]
         [string]$NameFilter,
 
-        [parameter(Mandatory = $true)]
-        [securestring]$PAT
+        [parameter(Mandatory = $true, ParameterSetName = 'PATAuth')]
+        [securestring]$PAT,
+
+        [parameter(Mandatory = $true, ParameterSetName = 'IntegratedAuth')]
+        [switch]$Integrated
     )
 
     $getArgs = @{}
-    $PSBoundParameters.Keys | Where-Object { $_ -ne 'PAT' } | ForEach-Object { 
+    $PSBoundParameters.Keys | Where-Object { $_ -ne 'PAT' -and $_ -ne 'Integrated' } | ForEach-Object { 
         $getArgs[$_] = $PSBoundParameters[$_] 
     }
 
@@ -372,7 +392,14 @@ function Uninstall-VSTSAgent {
         if ( -not $PSCmdlet.ShouldProcess("$($_.Name) - $($_.Path)", "Uninstall")) { return }
 
         $configPath = [io.path]::Combine($_.Path.LocalPath, 'config.cmd')
-        $configArgs = @('remove', '--unattended', '--auth', 'pat', '--token', "$token")
+        $configArgs = @('remove', '--unattended')
+        
+        if ($Integrated) {
+            $configArgs += '--auth', 'integrated'
+        }
+        else {
+            $configArgs += '--auth', 'pat', '--token', "$token"
+        }
 
         $outFile = [io.path]::Combine($_.Path.LocalPath, "out.log")
         $errorFile = [io.path]::Combine($_.Path.LocalPath, "error.log")
