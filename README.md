@@ -87,7 +87,7 @@ Configuration Sample_xVSTSAgent_Install {
 ```
 
 # Feedback
-To file issues or suggestions, please use the [Issues](https://github.com/Microsoft/unitysetup.powershell/issues) page for this project on GitHub.
+To file issues or suggestions, please use the [Issues](https://github.com/microsoft/VSTSAgent.PowerShell/issues) page for this project on GitHub.
 
 
 # Contributing
