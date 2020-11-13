@@ -10,6 +10,7 @@ class xVSTSAgent : OMI_BaseResource
     [Required] String AgentDirectory;
     [Write] String Work;
     [Write] Boolean PrefixComputerName;
+    [Write] Boolean IntegratedAuth;
     [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };
 
