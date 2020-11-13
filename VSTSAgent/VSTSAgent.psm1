@@ -310,8 +310,10 @@ function Install-VSTSAgent {
     $outFile = [io.path]::Combine($agentFolder, "out.log")
     $errorFile = [io.path]::Combine($agentFolder, "error.log")
 
+    $quotedConfigArgs = $configArgs | ForEach-Object -Process "`"$_`"" 
+
     Write-Verbose "Registering $Name to $Pool at $ServerUrl"
-    Start-Process $configPath -ArgumentList $configArgs -NoNewWindow -Wait `
+    Start-Process $configPath -ArgumentList $quotedConfigArgs -NoNewWindow -Wait `
         -RedirectStandardOutput $outFile -RedirectStandardError $errorFile -ErrorAction Stop
 
     if (Test-Path $errorFile) {
