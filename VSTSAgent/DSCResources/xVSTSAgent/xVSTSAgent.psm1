@@ -108,6 +108,15 @@ function Set-TargetResource {
         [System.String]
         $Pool = 'Default',
 
+        [System.String]
+        $DeploymentGroup = '',
+
+        [System.String]
+        $DeploymentGroupTags = '',
+
+        [System.String]
+        [string]$ProjectName = '',
+
         [parameter(Mandatory = $true)]
         [System.String]
         $AgentDirectory,
@@ -141,12 +150,15 @@ function Set-TargetResource {
 
     if ( $Ensure -eq 'Present') {
         $installArgs = @{
-            'Name'           = $Name 
-            'Pool'           = $Pool
-            'ServerUrl'      = $ServerUrl
-            'PAT'            = $AccountCredential.Password
-            'AgentDirectory' = $AgentDirectory
-            'Replace'        = $true
+            'Name'           		= $Name 
+            'Pool'           		= $Pool
+            'ServerUrl'      		= $ServerUrl
+            'PAT'            		= $AccountCredential.Password
+            'AgentDirectory' 		= $AgentDirectory
+            'Replace'        		= $true
+			'DeploymentGroup'		= $DeploymentGroup
+			'DeploymentGroupTags'	= $DeploymentGroupTags
+			'ProjectName'			= $ProjectName
         }
 
         if ( $Work ) { $installArgs['Work'] = $Work }
