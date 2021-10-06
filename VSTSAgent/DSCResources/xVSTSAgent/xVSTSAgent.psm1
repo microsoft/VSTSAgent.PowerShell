@@ -201,6 +201,15 @@ function Test-TargetResource {
         [System.String]
         $Pool = 'Default',
 
+        [System.String]
+        $DeploymentGroup = '',
+
+        [System.String]
+        $DeploymentGroupTags = '',
+
+        [System.String]
+        [string]$ProjectName = '',
+
         [parameter(Mandatory = $true)]
         [System.String]
         $AgentDirectory,
