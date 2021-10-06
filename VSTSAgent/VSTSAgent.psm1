@@ -222,6 +222,15 @@ function Install-VSTSAgent {
         [parameter(Mandatory = $false)]
         [string]$Pool = 'Default',
 
+        [parameter(Mandatory = $false)]
+        [string]$DeploymentGroup = '',
+
+        [parameter(Mandatory = $false)]
+        [string]$DeploymentGroupTags = '',
+
+        [parameter(Mandatory = $false)]
+        [string]$ProjectName = '',
+
         [parameter(Mandatory = $true)]
         [securestring]$PAT,
 
@@ -292,7 +301,14 @@ function Install-VSTSAgent {
     if ( -not $configPath ) { throw "Agent $agentFolder is missing config.cmd" }
 
     [string[]]$configArgs = @('--unattended', '--url', "$ServerUrl", '--auth', `
-            'pat', '--pool', "$Pool", '--agent', "$Name", '--runAsService')
+            'pat', '--agent', "$Name", '--runAsService')
+
+	if ($Pool) { $configArgs += '--pool', $Pool }
+
+	if ($DeploymentGroup) { $configArgs += '--deploymentgroup', '--deploymentgroupname', $DeploymentGroup }
+	if ($DeploymentGroupTags) { $configArgs += '--addDeploymentGroupTags', '--deploymentGroupTags', $DeploymentGroupTags }
+	if ($ProjectName) { $configArgs += '--projectname', $ProjectName }
+
     if ( $Replace ) { $configArgs += '--replace' }
     if ( $LogonCredential ) { $configArgs += '--windowsLogonAccount', $LogonCredential.UserName }
     if ( $Work ) { $configArgs += '--work', $Work }
