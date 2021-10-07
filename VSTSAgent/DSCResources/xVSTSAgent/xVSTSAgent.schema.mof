@@ -4,6 +4,9 @@ class xVSTSAgent : OMI_BaseResource
 {
     [Key] String Name;
     [Write] String Pool;
+    [Write] String ProjectName;
+    [Write] String DeploymentGroup;
+    [Write] String DeploymentGroupTags;
     [Required, EmbeddedInstance("MSFT_Credential")] String AccountCredential;
     [Required] String ServerUrl;
     [Write, EmbeddedInstance("MSFT_Credential")] String LogonCredential;
