@@ -229,6 +229,12 @@ function Install-VSTSAgent {
         [string]$DeploymentGroupTags = '',
 
         [parameter(Mandatory = $false)]
+        [string]$Environment = '',
+
+        [parameter(Mandatory = $false)]
+        [string]$VirtualMachineResourceTags = '',
+
+        [parameter(Mandatory = $false)]
         [string]$ProjectName = '',
 
         [parameter(Mandatory = $true)]
@@ -307,6 +313,8 @@ function Install-VSTSAgent {
 
 	if ($DeploymentGroup) { $configArgs += '--deploymentgroup', '--deploymentgroupname', $DeploymentGroup }
 	if ($DeploymentGroupTags) { $configArgs += '--addDeploymentGroupTags', '--deploymentGroupTags', $DeploymentGroupTags }
+    if ($Environment) { $configArgs += '--environment', '--environmentName', $Environment }
+    if ($VirtualMachineResourceTags) { $configArgs += '--addvirtualmachineresourcetags', '--virtualmachineresourcetags', $VirtualMachineResourceTags }
 	if ($ProjectName) { $configArgs += '--projectname', $ProjectName }
 
     if ( $Replace ) { $configArgs += '--replace' }
