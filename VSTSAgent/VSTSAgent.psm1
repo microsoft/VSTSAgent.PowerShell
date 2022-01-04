@@ -309,13 +309,13 @@ function Install-VSTSAgent {
     [string[]]$configArgs = @('--unattended', '--url', "$ServerUrl", '--auth', `
             'pat', '--agent', "$Name", '--runAsService')
 
-	if ($Pool) { $configArgs += '--pool', $Pool }
+    if ($Pool) { $configArgs += '--pool', $Pool }
 
-	if ($DeploymentGroup) { $configArgs += '--deploymentgroup', '--deploymentgroupname', $DeploymentGroup }
-	if ($DeploymentGroupTags) { $configArgs += '--addDeploymentGroupTags', '--deploymentGroupTags', $DeploymentGroupTags }
+    if ($DeploymentGroup) { $configArgs += '--deploymentgroup', '--deploymentgroupname', $DeploymentGroup }
+    if ($DeploymentGroupTags) { $configArgs += '--addDeploymentGroupTags', '--deploymentGroupTags', $DeploymentGroupTags }
     if ($Environment) { $configArgs += '--environment', '--environmentName', $Environment }
     if ($VirtualMachineResourceTags) { $configArgs += '--addvirtualmachineresourcetags', '--virtualmachineresourcetags', $VirtualMachineResourceTags }
-	if ($ProjectName) { $configArgs += '--projectname', $ProjectName }
+    if ($ProjectName) { $configArgs += '--projectname', $ProjectName }
 
     if ( $Replace ) { $configArgs += '--replace' }
     if ( $LogonCredential ) { $configArgs += '--windowsLogonAccount', $LogonCredential.UserName }
