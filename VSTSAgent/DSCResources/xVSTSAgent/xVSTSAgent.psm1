@@ -115,6 +115,12 @@ function Set-TargetResource {
         $DeploymentGroupTags = '',
 
         [System.String]
+        $Environment = '',
+
+        [System.String]
+        $VirtualMachineResourceTags = '',
+
+        [System.String]
         [string]$ProjectName = '',
 
         [parameter(Mandatory = $true)]
@@ -150,15 +156,17 @@ function Set-TargetResource {
 
     if ( $Ensure -eq 'Present') {
         $installArgs = @{
-            'Name'                  = $Name 
-            'Pool'                  = $Pool
-            'ServerUrl'             = $ServerUrl
-            'PAT'                   = $AccountCredential.Password
-            'AgentDirectory'        = $AgentDirectory
-            'Replace'               = $true
-            'DeploymentGroup'       = $DeploymentGroup
-            'DeploymentGroupTags'   = $DeploymentGroupTags
-            'ProjectName'           = $ProjectName
+            'Name'                       = $Name 
+            'Pool'                       = $Pool
+            'ServerUrl'                  = $ServerUrl
+            'PAT'                        = $AccountCredential.Password
+            'AgentDirectory'             = $AgentDirectory
+            'Replace'                    = $true
+            'DeploymentGroup'            = $DeploymentGroup
+            'DeploymentGroupTags'        = $DeploymentGroupTags
+            'Environment'                = $Environment
+            'VirtualMachineResourceTags' = $VirtualMachineResourceTags
+            'ProjectName'                = $ProjectName
         }
 
         if ( $Work ) { $installArgs['Work'] = $Work }
@@ -206,6 +214,12 @@ function Test-TargetResource {
 
         [System.String]
         $DeploymentGroupTags = '',
+
+        [System.String]
+        $Environment = '',
+
+        [System.String]
+        $VirtualMachineResourceTags = '',
 
         [System.String]
         [string]$ProjectName = '',
