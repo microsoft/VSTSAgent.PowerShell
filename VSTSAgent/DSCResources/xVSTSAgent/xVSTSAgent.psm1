@@ -131,6 +131,10 @@ function Set-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        [string]$ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -171,6 +175,7 @@ function Set-TargetResource {
 
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
+        if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
         
         Install-VSTSAgent @installArgs
     }
