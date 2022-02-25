@@ -247,7 +247,6 @@ function Install-VSTSAgent {
         [uri]$ServerUrl,
 
         [parameter(Mandatory = $false)]
-        [ValidateScript({ $_ -match "http://\d{1,3}[.]\d{1,3}[.]\d{1,3}[.]\d{1,3}:\d{1,5}" })]
         [string]$ProxyUrl,
 
         [parameter(Mandatory = $false)]
