@@ -283,7 +283,7 @@ function Test-TargetResource {
                 return $false 
             }
             if ( $ProxyUrl ) {
-                if ( $agent.ProxyUrl -ne $ServerUrl ) {
+                if ( $agent.ProxyUrl -ne $ProxyUrl ) {
                     Write-Verbose "ProxyUrl mismatch: $($agent.ProxyUrl) -ne $ProxyUrl"
                     return $false 
                 }
