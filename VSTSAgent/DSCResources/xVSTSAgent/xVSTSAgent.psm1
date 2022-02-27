@@ -43,6 +43,10 @@ function Get-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -71,6 +75,7 @@ function Get-TargetResource {
         $returnValue['Work'] = "$($agent.Work)"
         $returnValue['PoolId'] = "$($agent.PoolId)"
         $returnValue['Ensure'] = 'Present'
+        $returnValue['ProxyUrl'] = $ProxyUrl
     }
     else {
         $returnValue['Ensure'] = 'Absent'
@@ -133,7 +138,7 @@ function Set-TargetResource {
 
         [parameter(Mandatory = $false)]
         [System.String]
-        [string]$ProxyUrl,
+        $ProxyUrl,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -237,6 +242,10 @@ function Test-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -272,6 +281,12 @@ function Test-TargetResource {
             if ( $Work -and $agent.Work -ne $Work ) { 
                 Write-Verbose "Work folder mismatch: $($agent.Work) -ne $Work"
                 return $false 
+            }
+            if ( $ProxyUrl ) {
+                if ( $agent.ProxyUrl -ne $ServerUrl ) {
+                    Write-Verbose "ProxyUrl mismatch: $($agent.ProxyUrl) -ne $ProxyUrl"
+                    return $false 
+                }
             }
             # TODO: Get back to pool name from $agent.PoolId.
 

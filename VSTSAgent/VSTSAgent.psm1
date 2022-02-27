@@ -501,6 +501,10 @@ function Get-VSTSAgent {
                 $service = Get-Service $serviceName
             }
 
+            if ( Test-Path "$($_.Directory.FullName)\.proxy" ) {
+                $proxyUrl = Get-Content "$($_.Directory.FullName)\.proxy"
+            }
+
             [pscustomobject]@{
                 'Id'        = $agent.agentId
                 'Name'      = $agent.agentName
@@ -509,6 +513,7 @@ function Get-VSTSAgent {
                 'Work'      = [uri]$agent.workFolder
                 'Service'   = $service
                 'Version'   = $version
+                'ProxyUrl'  = $proxyUrl
                 'Path'      = [uri]$agentFullDirectory
             }
         }
