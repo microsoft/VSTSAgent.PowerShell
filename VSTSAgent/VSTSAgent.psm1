@@ -111,10 +111,7 @@ function Find-VSTSAgent {
         [switch]$Latest,
 
         [parameter(Mandatory = $false)]
-        [string]$Platform,
-
-        [parameter(Mandatory = $false)]
-        [string]$ProxyUrl 
+        [string]$Platform
     )
 
     if ( $Latest ) {
@@ -277,8 +274,7 @@ function Install-VSTSAgent {
     if ( $MinimumVersion ) { $findArgs['MinimumVersion'] = $MinimumVersion }
     if ( $MaximumVersion ) { $findArgs['MaximumVersion'] = $MaximumVersion }
     if ( $RequiredVersion ) { $findArgs['RequiredVersion'] = $RequiredVersion }
-    if ( $ProxyUrl ) {  $findArgs['ProxyUrl'] = $ProxyUrl }
-
+    
     $agent = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version | Select-Object -First 1
     if ( -not $agent ) { throw "Could not find agent matching requirements." }
 
