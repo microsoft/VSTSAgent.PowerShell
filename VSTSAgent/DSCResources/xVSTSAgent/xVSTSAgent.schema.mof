@@ -14,6 +14,7 @@ class xVSTSAgent : OMI_BaseResource
     [Write, EmbeddedInstance("MSFT_Credential")] String LogonCredential;
     [Required] String AgentDirectory;
     [Write] String Work;
+    [Write] String ProxyUrl;
     [Write] Boolean PrefixComputerName;
     [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };

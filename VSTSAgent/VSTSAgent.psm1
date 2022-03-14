@@ -244,6 +244,9 @@ function Install-VSTSAgent {
         [uri]$ServerUrl,
 
         [parameter(Mandatory = $false)]
+        [string]$ProxyUrl,
+
+        [parameter(Mandatory = $false)]
         [switch]$Replace,
 
         [parameter(Mandatory = $false)]
@@ -271,7 +274,7 @@ function Install-VSTSAgent {
     if ( $MinimumVersion ) { $findArgs['MinimumVersion'] = $MinimumVersion }
     if ( $MaximumVersion ) { $findArgs['MaximumVersion'] = $MaximumVersion }
     if ( $RequiredVersion ) { $findArgs['RequiredVersion'] = $RequiredVersion }
-
+    
     $agent = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version | Select-Object -First 1
     if ( -not $agent ) { throw "Could not find agent matching requirements." }
 
@@ -319,6 +322,7 @@ function Install-VSTSAgent {
 
     if ( $Replace ) { $configArgs += '--replace' }
     if ( $LogonCredential ) { $configArgs += '--windowsLogonAccount', $LogonCredential.UserName }
+    if ( $ProxyUrl ) { $configArgs += '--proxyurl', $ProxyUrl }
     if ( $Work ) { $configArgs += '--work', $Work }
 
     if ( -not $PSCmdlet.ShouldProcess("$configPath $configArgs", "Start-Process") ) { return }
@@ -493,6 +497,10 @@ function Get-VSTSAgent {
                 $service = Get-Service $serviceName
             }
 
+            if ( Test-Path "$($_.Directory.FullName)\.proxy" ) {
+                $proxyUrl = Get-Content "$($_.Directory.FullName)\.proxy"
+            }
+
             [pscustomobject]@{
                 'Id'        = $agent.agentId
                 'Name'      = $agent.agentName
@@ -501,6 +509,7 @@ function Get-VSTSAgent {
                 'Work'      = [uri]$agent.workFolder
                 'Service'   = $service
                 'Version'   = $version
+                'ProxyUrl'  = $proxyUrl
                 'Path'      = [uri]$agentFullDirectory
             }
         }

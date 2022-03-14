@@ -43,6 +43,10 @@ function Get-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -71,6 +75,7 @@ function Get-TargetResource {
         $returnValue['Work'] = "$($agent.Work)"
         $returnValue['PoolId'] = "$($agent.PoolId)"
         $returnValue['Ensure'] = 'Present'
+        $returnValue['ProxyUrl'] = $ProxyUrl
     }
     else {
         $returnValue['Ensure'] = 'Absent'
@@ -131,6 +136,10 @@ function Set-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -171,6 +180,7 @@ function Set-TargetResource {
 
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
+        if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
         
         Install-VSTSAgent @installArgs
     }
@@ -232,6 +242,10 @@ function Test-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -267,6 +281,12 @@ function Test-TargetResource {
             if ( $Work -and $agent.Work -ne $Work ) { 
                 Write-Verbose "Work folder mismatch: $($agent.Work) -ne $Work"
                 return $false 
+            }
+            if ( $ProxyUrl ) {
+                if ( $agent.ProxyUrl -ne $ProxyUrl ) {
+                    Write-Verbose "ProxyUrl mismatch: $($agent.ProxyUrl) -ne $ProxyUrl"
+                    return $false 
+                }
             }
             # TODO: Get back to pool name from $agent.PoolId.
 
