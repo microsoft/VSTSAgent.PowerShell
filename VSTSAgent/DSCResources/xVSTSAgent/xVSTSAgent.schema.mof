@@ -17,5 +17,6 @@ class xVSTSAgent : OMI_BaseResource
     [Write] String ProxyUrl;
     [Write] Boolean PrefixComputerName;
     [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
+    [Write] String RequiredVersion;
 };
 

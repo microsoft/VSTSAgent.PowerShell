@@ -156,7 +156,11 @@ function Set-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion
     )
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
@@ -181,6 +185,7 @@ function Set-TargetResource {
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
         if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
+        if ( $RequiredVersion ) { $installArgs['RequiredVersion'] = $RequiredVersion }
         
         Install-VSTSAgent @installArgs
     }
@@ -262,7 +267,11 @@ function Test-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion
     )
 
     if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
