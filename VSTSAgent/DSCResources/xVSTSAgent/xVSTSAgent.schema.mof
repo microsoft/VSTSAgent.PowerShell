@@ -4,11 +4,17 @@ class xVSTSAgent : OMI_BaseResource
 {
     [Key] String Name;
     [Write] String Pool;
+    [Write] String ProjectName;
+    [Write] String DeploymentGroup;
+    [Write] String DeploymentGroupTags;
+    [Write] String Environment;
+    [Write] String VirtualMachineResourceTags;
     [Required, EmbeddedInstance("MSFT_Credential")] String AccountCredential;
     [Required] String ServerUrl;
     [Write, EmbeddedInstance("MSFT_Credential")] String LogonCredential;
     [Required] String AgentDirectory;
     [Write] String Work;
+    [Write] String ProxyUrl;
     [Write] Boolean PrefixComputerName;
     [Write, ValueMap{"Present","Absent"}, Values{"Present","Absent"}] String Ensure;
 };

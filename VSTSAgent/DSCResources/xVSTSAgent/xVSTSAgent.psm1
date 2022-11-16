@@ -43,6 +43,10 @@ function Get-TargetResource {
         [System.String]
         $Work,
 
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
+
         [parameter(Mandatory = $true)]
         [System.String]
         $ServerUrl,
@@ -71,6 +75,7 @@ function Get-TargetResource {
         $returnValue['Work'] = "$($agent.Work)"
         $returnValue['PoolId'] = "$($agent.PoolId)"
         $returnValue['Ensure'] = 'Present'
+        $returnValue['ProxyUrl'] = $ProxyUrl
     }
     else {
         $returnValue['Ensure'] = 'Absent'
@@ -108,6 +113,21 @@ function Set-TargetResource {
         [System.String]
         $Pool = 'Default',
 
+        [System.String]
+        $DeploymentGroup = '',
+
+        [System.String]
+        $DeploymentGroupTags = '',
+
+        [System.String]
+        $Environment = '',
+
+        [System.String]
+        $VirtualMachineResourceTags = '',
+
+        [System.String]
+        [string]$ProjectName = '',
+
         [parameter(Mandatory = $true)]
         [System.String]
         $AgentDirectory,
@@ -115,6 +135,10 @@ function Set-TargetResource {
         [parameter(Mandatory = $false)]
         [System.String]
         $Work,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -141,16 +165,22 @@ function Set-TargetResource {
 
     if ( $Ensure -eq 'Present') {
         $installArgs = @{
-            'Name'           = $Name 
-            'Pool'           = $Pool
-            'ServerUrl'      = $ServerUrl
-            'PAT'            = $AccountCredential.Password
-            'AgentDirectory' = $AgentDirectory
-            'Replace'        = $true
+            'Name'                       = $Name 
+            'Pool'                       = $Pool
+            'ServerUrl'                  = $ServerUrl
+            'PAT'                        = $AccountCredential.Password
+            'AgentDirectory'             = $AgentDirectory
+            'Replace'                    = $true
+            'DeploymentGroup'            = $DeploymentGroup
+            'DeploymentGroupTags'        = $DeploymentGroupTags
+            'Environment'                = $Environment
+            'VirtualMachineResourceTags' = $VirtualMachineResourceTags
+            'ProjectName'                = $ProjectName
         }
 
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
+        if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
         
         Install-VSTSAgent @installArgs
     }
@@ -189,6 +219,21 @@ function Test-TargetResource {
         [System.String]
         $Pool = 'Default',
 
+        [System.String]
+        $DeploymentGroup = '',
+
+        [System.String]
+        $DeploymentGroupTags = '',
+
+        [System.String]
+        $Environment = '',
+
+        [System.String]
+        $VirtualMachineResourceTags = '',
+
+        [System.String]
+        [string]$ProjectName = '',
+
         [parameter(Mandatory = $true)]
         [System.String]
         $AgentDirectory,
@@ -196,6 +241,10 @@ function Test-TargetResource {
         [parameter(Mandatory = $false)]
         [System.String]
         $Work,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $ProxyUrl,
 
         [parameter(Mandatory = $true)]
         [System.String]
@@ -232,6 +281,12 @@ function Test-TargetResource {
             if ( $Work -and $agent.Work -ne $Work ) { 
                 Write-Verbose "Work folder mismatch: $($agent.Work) -ne $Work"
                 return $false 
+            }
+            if ( $ProxyUrl ) {
+                if ( $agent.ProxyUrl -ne $ProxyUrl ) {
+                    Write-Verbose "ProxyUrl mismatch: $($agent.ProxyUrl) -ne $ProxyUrl"
+                    return $false 
+                }
             }
             # TODO: Get back to pool name from $agent.PoolId.
 
