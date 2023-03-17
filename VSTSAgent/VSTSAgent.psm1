@@ -104,62 +104,63 @@ function Find-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
 
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
-
         [parameter(Mandatory = $true, ParameterSetName = 'Latest')]
         [switch]$Latest,
 
         [parameter(Mandatory = $false)]
-        [string]$Platform
+        [string]$Platform,
+
+        [parameter(Mandatory = $false)]
+        [string]$GitHubApiToken
     )
 
-    if ( $Latest ) {
+    $foundAgents = @()
 
-        $findArgs = @{ }
-        if ( $Platform ) { $findArgs['Platform'] = $Platform }
-        $sortedAgents = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version
-        $sortedAgents | Where-Object { $_.Version -eq $sortedAgents[0].Version }
-        return
+    if ($Platform) { $Platform += "-x64" }
+
+    $headers = @{ }
+    if ($GitHubApiToken) { $headers["Authorization"] = ("Bearer "+$GitHubApiToken) }
+
+    $webData = Invoke-WebRequest -Uri "https://api.github.com/repos/microsoft/vsts-agent/releases" -Method Get -Headers $headers
+    $releases = ConvertFrom-Json $webData.content
+
+    $releases = ($releases | Where-Object { -not $_.prerelease })
+
+    $releases | ForEach-Object {
+        $release = $_
+        $webData = Invoke-WebRequest -Uri $release.assets.browser_download_url
+        try {
+            $assetData = [System.Text.Encoding]::ASCII.GetString($webData.Content) | ConvertFrom-Json
+            if ($assetData) {
+                $assetData | ForEach-Object {
+                
+                    $asset = $_
+                    if ($asset.name -notlike 'vsts*') { return }
+                
+                    $agent = [PSCustomObject] @{
+                        'Platform' = $asset.platform
+                        'Version'  = [VSTSAgentVersion]$asset.version
+                        'Uri'      = [uri]::new($asset.downloadUrl, [System.UriKind]::RelativeOrAbsolute)   
+                    }
+
+                    if ($Platform -and $agent.Platform -ne $Platform) { return }
+                    if ( $MinimumVersion -and $agent.Version -lt $MinimumVersion) { return }
+                    if ( $MaximumVersion -and $agent.Version -gt $MaximumVersion) { return }
+
+                    $foundAgents += $agent
+                }
+            }
+        }
+        catch {
+        }
     }
 
-    Set-SecurityProtocol
-
-    $rootUri = [uri]"https://github.com"
-    $releasesRelativeUri = [uri]"/Microsoft/vsts-agent/releases"
-    
-    $page = [uri]::new( $rootUri, $releasesRelativeUri )
-    $queriedPages = @()
-
-    do {
-        
-        $result = Invoke-WebRequest $page -UseBasicParsing
-        $result.Links.href | Where-Object { $_ -match "vsts-agent-(\w+)-x64-(\d+\.\d+\.\d+)\..+$" } | ForEach-Object {
-            
-            $instance = [PSCustomObject] @{
-                'Platform' = $Matches[1]
-                'Version'  = [VSTSAgentVersion]$Matches[2]
-                'Uri'      = [uri]::new($_, [System.UriKind]::RelativeOrAbsolute)   
-            }
-
-            # Make it absolute
-            if ( -not $instance.Uri.IsAbsoluteUri ) { $instance.Uri = [uri]::new($rootUri, $instance.Uri) }
-
-            if ( $RequiredVersion -and $instance.Version -ne $RequiredVersion) { return }
-            if ( $MinimumVersion -and $instance.Version -lt $MinimumVersion) { return }
-            if ( $MaximumVersion -and $instance.Version -gt $MaximumVersion) { return }
-            if ( $Platform -and $instance.Platform -ne $Platform) { return }
-
-            Write-Verbose "Found agent at $($instance.Uri)"
-            Write-Output $instance
-        }
-
-        $queriedPages += $page
-        $page = $result.Links.href | Where-Object { 
-            $_ -match "$releasesRelativeUri\?after=v(\d+\.\d+\.\d+)$" -and $queriedPages -notcontains $_
-        } | Select-Object -First 1
-
-    } while ($page)
+    if ($Latest -and $foundAgents -and $foundAgents.Count -gt 1) {
+        $foundAgents[0]
+    }
+    else {
+        $foundAgents
+    }
 }
 
 
@@ -207,9 +208,6 @@ function Install-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
 
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
-
         [parameter(Mandatory = $false)]
         [string]$AgentDirectory = [IO.Path]::Combine($env:USERPROFILE, "VSTSAgents"),
 
@@ -253,7 +251,10 @@ function Install-VSTSAgent {
         [pscredential]$LogonCredential,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".vstsagents")
+        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".vstsagents"),
+
+        [parameter(Mandatory = $false)]
+        [string]$GitHubApiToken
     )
 
     if ($PSVersionTable.Platform -and $PSVersionTable.Platform -ne 'Win32NT') {
@@ -273,7 +274,7 @@ function Install-VSTSAgent {
     $findArgs = @{ 'Platform' = 'win' }
     if ( $MinimumVersion ) { $findArgs['MinimumVersion'] = $MinimumVersion }
     if ( $MaximumVersion ) { $findArgs['MaximumVersion'] = $MaximumVersion }
-    if ( $RequiredVersion ) { $findArgs['RequiredVersion'] = $RequiredVersion }
+    if ( $GitHubApiToken ) { $findArgs['GitHubApiToken'] = $GitHubApiToken }
     
     $agent = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version | Select-Object -First 1
     if ( -not $agent ) { throw "Could not find agent matching requirements." }
@@ -376,9 +377,6 @@ function Uninstall-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
 
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
-
         [parameter(Mandatory = $false)]
         [string]$AgentDirectory,
 
@@ -445,9 +443,6 @@ function Get-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
 
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
-
         [parameter(Mandatory = $false)]
         [string]$AgentDirectory = [io.Path]::Combine($env:USERPROFILE, "VSTSAgents"),
 
@@ -479,10 +474,6 @@ function Get-VSTSAgent {
 
             $version = & $configPath --version
 
-            if ( $RequiredVersion -and $version -ne $RequiredVersion) { 
-                Write-Verbose "Skipping agent because $version not match $RequiredVersion"
-                return
-            }
             if ( $MinimumVersion -and $version -lt $MinimumVersion) { 
                 Write-Verbose "Skipping agent because $version is less than $MinimumVersion"
                 return 
@@ -543,9 +534,6 @@ function Start-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
 
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
-
         [parameter(Mandatory = $false)]
         [string]$AgentDirectory,
 
@@ -588,9 +576,6 @@ function Stop-VSTSAgent {
         [parameter(Mandatory = $true, ParameterSetName = 'MaxVersion')]
         [parameter(Mandatory = $true, ParameterSetName = 'MinMaxVersion')]
         [VSTSAgentVersion]$MaximumVersion,
-
-        [parameter(Mandatory = $true, ParameterSetName = 'RequiredVersion')]
-        [VSTSAgentVersion]$RequiredVersion,
 
         [parameter(Mandatory = $false)]
         [string]$AgentDirectory,

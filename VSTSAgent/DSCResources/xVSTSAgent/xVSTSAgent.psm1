@@ -160,7 +160,11 @@ function Set-TargetResource {
 
         [parameter(Mandatory = $false)]
         [System.String]
-        $RequiredVersion
+        $RequiredVersion,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $GitHubApiToken
     )
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
@@ -185,7 +189,12 @@ function Set-TargetResource {
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
         if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
-        if ( $RequiredVersion ) { $installArgs['RequiredVersion'] = $RequiredVersion }
+        if ( $RequiredVersion ) 
+        {
+            $installArgs['MinimumVersion'] = $RequiredVersion
+            $installArgs['MinMaxVersion'] = $RequiredVersion
+        }
+        if ($GitHubApiToken) { $installArgs['GitHubApiToken'] = $GitHubApiToken }
         
         Install-VSTSAgent @installArgs
     }
