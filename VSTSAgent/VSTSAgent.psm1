@@ -118,19 +118,18 @@ function Find-VSTSAgent {
 
     if ($Platform) { $Platform += "-x64" }
 
-    $headers = @{ }
-    if ($GitHubApiToken) { $headers["Authorization"] = ("Bearer "+$GitHubApiToken) }
+    $client = (New-Object System.Net.WebClient)
+    $client.Headers["User-Agent"] = "request"
+    if ($GitHubApiToken) { $client.Headers["Authorization"] = ("Bearer "+$GitHubApiToken) }
 
-    $webData = Invoke-WebRequest -Uri "https://api.github.com/repos/microsoft/vsts-agent/releases" -Method Get -Headers $headers
-    $releases = ConvertFrom-Json $webData.content
+    $releases = $client.DownloadString("https://api.github.com/repos/microsoft/vsts-agent/releases") | ConvertFrom-JSON
 
     $releases = ($releases | Where-Object { -not $_.prerelease })
 
     $releases | ForEach-Object {
         $release = $_
-        $webData = Invoke-WebRequest -Uri $release.assets.browser_download_url
         try {
-            $assetData = [System.Text.Encoding]::ASCII.GetString($webData.Content) | ConvertFrom-Json
+            $assetData = $client.DownloadString($release.assets.browser_download_url) | ConvertFrom-JSON
             if ($assetData) {
                 $assetData | ForEach-Object {
                 
@@ -292,7 +291,9 @@ function Install-VSTSAgent {
         }
 
         Write-Verbose "Downloading agent from $($agent.Uri)"
-        try {  Start-BitsTransfer -Source $agent.Uri -Destination $destPath }
+        try {  
+            (New-Object System.Net.WebClient).DownloadFile($agent.Uri, $destPath)
+        }
         catch { throw "Downloading $($agent.Uri) failed: $_" }
     }
     else { Write-Verbose "Skipping download as $destPath already exists." }
