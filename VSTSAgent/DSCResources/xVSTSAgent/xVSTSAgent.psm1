@@ -156,7 +156,15 @@ function Set-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $GitHubApiToken
     )
 
     if ( Test-TargetResource @PSBoundParameters ) { return }
@@ -181,6 +189,12 @@ function Set-TargetResource {
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
         if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
+        if ( $RequiredVersion ) 
+        {
+            $installArgs['MinimumVersion'] = $RequiredVersion
+            $installArgs['MaximumVersion'] = $RequiredVersion
+        }
+        if ($GitHubApiToken) { $installArgs['GitHubApiToken'] = $GitHubApiToken }
         
         Install-VSTSAgent @installArgs
     }
@@ -262,7 +276,15 @@ function Test-TargetResource {
         $Ensure = 'Present',
 
         [System.Boolean]
-        $PrefixComputerName = $false
+        $PrefixComputerName = $false,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $GitHubApiToken
     )
 
     if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
