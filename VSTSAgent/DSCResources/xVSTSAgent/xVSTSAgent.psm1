@@ -280,7 +280,11 @@ function Test-TargetResource {
 
         [parameter(Mandatory = $false)]
         [System.String]
-        $RequiredVersion
+        $RequiredVersion,
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $GitHubApiToken
     )
 
     if ( $PrefixComputerName ) { $Name = Get-PrefixComputerName $Name }
