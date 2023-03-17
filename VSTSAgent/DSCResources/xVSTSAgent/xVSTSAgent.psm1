@@ -192,7 +192,7 @@ function Set-TargetResource {
         if ( $RequiredVersion ) 
         {
             $installArgs['MinimumVersion'] = $RequiredVersion
-            $installArgs['MaxVersion'] = $RequiredVersion
+            $installArgs['MaximumVersion'] = $RequiredVersion
         }
         if ($GitHubApiToken) { $installArgs['GitHubApiToken'] = $GitHubApiToken }
         
