@@ -41,6 +41,18 @@ function Get-TargetResource {
 
         [parameter(Mandatory = $false)]
         [System.String]
+        $MinimumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $MaximumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
         $Work,
 
         [parameter(Mandatory = $false)]
@@ -76,6 +88,9 @@ function Get-TargetResource {
         $returnValue['PoolId'] = "$($agent.PoolId)"
         $returnValue['Ensure'] = 'Present'
         $returnValue['ProxyUrl'] = $ProxyUrl
+        if ($MinimumVersion) { $returnValue['MinimumVersion'] = $MinimumVersion }
+        if ($MaximumVersion) { $returnValue['MaximumVersion'] = $MaximumVersion }
+        if ($RequiredVersion) { $returnValue['RequiredVersion'] = $RequiredVersion }
     }
     else {
         $returnValue['Ensure'] = 'Absent'
@@ -115,6 +130,18 @@ function Set-TargetResource {
 
         [System.String]
         $DeploymentGroup = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $MinimumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $MaximumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion = '',
 
         [System.String]
         $DeploymentGroupTags = '',
@@ -181,6 +208,9 @@ function Set-TargetResource {
         if ( $Work ) { $installArgs['Work'] = $Work }
         if ( $LogonCredential ) { $installArgs['LogonCredential'] = $LogonCredential }
         if ( $ProxyUrl ) { $installArgs['ProxyUrl'] = $ProxyUrl }
+        if ($MinimumVersion) { $installArgs['MinimumVersion'] = $MinimumVersion }
+        if ($MaximumVersion) { $installArgs['MaximumVersion'] = $MaximumVersion }
+        if ($RequiredVersion) { $installArgs['RequiredVersion'] = $RequiredVersion }
         
         Install-VSTSAgent @installArgs
     }
@@ -221,6 +251,18 @@ function Test-TargetResource {
 
         [System.String]
         $DeploymentGroup = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $MinimumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $MaximumVersion = '',
+
+        [parameter(Mandatory = $false)]
+        [System.String]
+        $RequiredVersion = '',
 
         [System.String]
         $DeploymentGroupTags = '',
@@ -288,6 +330,17 @@ function Test-TargetResource {
                     return $false 
                 }
             }
+
+            if ( $RequiredVersion -and $agent.version -ne $RequiredVersion) { 
+                return $false
+            }
+            if ( $MinimumVersion -and $agent.version -lt $MinimumVersion) { 
+                return $false
+            }
+            if ( $MaximumVersion -and $agent.version -gt $MaximumVersion) {
+                return $false
+            }
+        
             # TODO: Get back to pool name from $agent.PoolId.
 
             Write-Verbose "VSTS Agent is Present"
