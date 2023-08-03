@@ -91,6 +91,8 @@ function Get-Platform {
     Find the latest available agent version.
 .PARAMETER Platform
     The platform required for the agent.
+.PARAMETER AgentType
+    Install Node6-based vsts-agent or Node10-based pipelines-agent asset
 #>
 function Find-VSTSAgent {
     [CmdletBinding( DefaultParameterSetName = "NoVersion")]
@@ -111,22 +113,24 @@ function Find-VSTSAgent {
         [switch]$Latest,
 
         [parameter(Mandatory = $false)]
-        [string]$Platform
+        [string]$Platform = 'win',
+
+        [parameter(Mandatory = $false)]
+        [ValidateSet('vsts-agent','pipelines-agent')]
+        [string]$AgentType = 'vsts-agent'
     )
 
-    if ( $Latest ) {
+    $rootUri = [uri]"https://github.com"
 
-        $findArgs = @{ }
-        if ( $Platform ) { $findArgs['Platform'] = $Platform }
-        $sortedAgents = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version
-        $sortedAgents | Where-Object { $_.Version -eq $sortedAgents[0].Version }
-        return
+    if ( $Latest ) {
+        $releasesRelativeUri = [uri]"/Microsoft/vsts-agent/releases/latest"
+    }
+    else
+    {
+        $releasesRelativeUri = [uri]"/Microsoft/vsts-agent/releases"
     }
 
     Set-SecurityProtocol
-
-    $rootUri = [uri]"https://github.com"
-    $releasesRelativeUri = [uri]"/Microsoft/vsts-agent/releases"
     
     $page = [uri]::new( $rootUri, $releasesRelativeUri )
     $queriedPages = @()
@@ -134,11 +138,11 @@ function Find-VSTSAgent {
     do {
         
         $result = Invoke-WebRequest $page -UseBasicParsing
-        $result.Links.href | Where-Object { $_ -match "vsts-agent-(\w+)-x64-(\d+\.\d+\.\d+)\..+$" } | ForEach-Object {
+        $result.Links.href | Where-Object { $_ -match "$($AgentType)-$($Platform)-x64-(\d+\.\d+\.\d+)\..+$" } | ForEach-Object {
             
             $instance = [PSCustomObject] @{
-                'Platform' = $Matches[1]
-                'Version'  = [VSTSAgentVersion]$Matches[2]
+                'Platform' = $Platform
+                'Version'  = [VSTSAgentVersion]$Matches[1]
                 'Uri'      = [uri]::new($_, [System.UriKind]::RelativeOrAbsolute)   
             }
 
@@ -148,8 +152,7 @@ function Find-VSTSAgent {
             if ( $RequiredVersion -and $instance.Version -ne $RequiredVersion) { return }
             if ( $MinimumVersion -and $instance.Version -lt $MinimumVersion) { return }
             if ( $MaximumVersion -and $instance.Version -gt $MaximumVersion) { return }
-            if ( $Platform -and $instance.Platform -ne $Platform) { return }
-
+            
             Write-Verbose "Found agent at $($instance.Uri)"
             Write-Output $instance
         }
@@ -194,6 +197,8 @@ function Find-VSTSAgent {
     What user credentials should be used by the agent service?
 .PARAMETER Cache
     Where should agent downloads be cached?
+.PARAMETER AgentType
+    Install Node6-based vsts-agent or Node10-based pipelines-agent asset
 #>
 function Install-VSTSAgent {
     [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName = "NoVersion")]
@@ -253,7 +258,11 @@ function Install-VSTSAgent {
         [pscredential]$LogonCredential,
 
         [parameter(Mandatory = $false)]
-        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".vstsagents")
+        [string]$Cache = [io.Path]::Combine($env:USERPROFILE, ".vstsagents"),
+
+        [parameter(Mandatory = $false)]
+        [ValidateSet('vsts-agent','pipelines-agent')]
+        [string]$AgentType = 'vsts-agent'
     )
 
     if ($PSVersionTable.Platform -and $PSVersionTable.Platform -ne 'Win32NT') {
@@ -274,6 +283,7 @@ function Install-VSTSAgent {
     if ( $MinimumVersion ) { $findArgs['MinimumVersion'] = $MinimumVersion }
     if ( $MaximumVersion ) { $findArgs['MaximumVersion'] = $MaximumVersion }
     if ( $RequiredVersion ) { $findArgs['RequiredVersion'] = $RequiredVersion }
+    if ( $AgentType ) { $findArgs['AgentType'] = $AgentType }
     
     $agent = Find-VSTSAgent @findArgs | Sort-Object -Descending -Property Version | Select-Object -First 1
     if ( -not $agent ) { throw "Could not find agent matching requirements." }
@@ -303,7 +313,7 @@ function Install-VSTSAgent {
         Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
     }
 
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($destPath, $agentFolder)
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($destPath, $agentFolder, $true)
 
     $configPath = [io.path]::combine($agentFolder, 'config.cmd')
     $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
