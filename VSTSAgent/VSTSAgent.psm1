@@ -313,7 +313,17 @@ function Install-VSTSAgent {
         Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
     }
 
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($destPath, $agentFolder, $true)
+    if (Test-Path -Path $agentFolder -PathType Container) {
+        if ($PSCmdlet.ShouldProcess($agentFolder, "Overwriting with content of $($destPath)")) {
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($destPath, $agentFolder, $true)
+        }
+        else {
+            throw "$($agentFolder) already exists."
+        }
+    }
+    else {
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($destPath, $agentFolder)
+    }
 
     $configPath = [io.path]::combine($agentFolder, 'config.cmd')
     $configPath = Get-ChildItem $configPath -ErrorAction SilentlyContinue
