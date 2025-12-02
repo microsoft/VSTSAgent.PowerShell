@@ -1,4 +1,4 @@
-# VSTS Agent Powershell Module
+# VSTS Agent PowerShell Module
 
 Tools for managing and automating your Visual Studio Team Services Agents.
 
